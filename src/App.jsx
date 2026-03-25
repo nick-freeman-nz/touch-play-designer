@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import FieldCanvas from './components/FieldCanvas';
 import Toolbar from './components/Toolbar';
 import PlayList from './components/PlayList';
-import { DEFAULT_ATTACK_POSITIONS, DEFAULT_DEFENSE_POSITIONS } from './utils/constants';
+import { DEFAULT_ATTACK_POSITIONS, DEFAULT_DEFENSE_POSITIONS, FIELD } from './utils/constants';
 import { getPlayDuration } from './utils/animation';
 import { recordPlay } from './utils/videoExport';
 
@@ -10,6 +10,8 @@ const defaultPlayers = () => [
   ...DEFAULT_ATTACK_POSITIONS.map((p) => ({ ...p, route: [] })),
   ...DEFAULT_DEFENSE_POSITIONS.map((p) => ({ ...p, route: [] })),
 ];
+
+let nextId = 100;
 
 export default function App() {
   const [players, setPlayers] = useState(defaultPlayers);
@@ -47,11 +49,6 @@ export default function App() {
     setAnimationProgress(0);
   }, []);
 
-  const handleReset = useCallback(() => {
-    handleStop();
-    setAnimationProgress(0);
-  }, [handleStop]);
-
   const handleClearRoutes = useCallback(() => {
     setPlayers((prev) => prev.map((p) => ({ ...p, route: [] })));
     setSelectedPlayerId(null);
@@ -62,6 +59,32 @@ export default function App() {
     setSelectedPlayerId(null);
     setCurrentPlayId(null);
   }, []);
+
+  const handleAddPlayer = useCallback((team) => {
+    nextId++;
+    const teamPlayers = players.filter((p) => p.team === team);
+    const label = String(teamPlayers.length + 1);
+    const prefix = team === 'attack' ? 'a' : 'd';
+    // Place new player near center of their side
+    const baseX = team === 'attack' ? FIELD.WIDTH * 0.45 : FIELD.WIDTH * 0.55;
+    setPlayers((prev) => [
+      ...prev,
+      {
+        id: `${prefix}${nextId}`,
+        label,
+        team,
+        x: baseX + Math.random() * 40 - 20,
+        y: FIELD.HEIGHT / 2 + Math.random() * 60 - 30,
+        route: [],
+      },
+    ]);
+  }, [players]);
+
+  const handleRemovePlayer = useCallback(() => {
+    if (!selectedPlayerId) return;
+    setPlayers((prev) => prev.filter((p) => p.id !== selectedPlayerId));
+    setSelectedPlayerId(null);
+  }, [selectedPlayerId]);
 
   const handleExportVideo = useCallback(() => {
     setIsExporting(true);
@@ -88,14 +111,14 @@ export default function App() {
         <h1 className="text-xl font-bold tracking-tight">
           {String.fromCodePoint(0x1F3C9)} Touch Play Designer
         </h1>
-        <span className="text-xs text-gray-500">v1.0</span>
+        <span className="text-xs text-gray-500">v1.1</span>
       </div>
       <Toolbar
         mode={mode}
         setMode={setMode}
         onPlay={handlePlay}
         onStop={handleStop}
-        onReset={handleReset}
+        onReset={handleStop}
         isAnimating={isAnimating}
         onClearRoutes={handleClearRoutes}
         onResetPositions={handleResetPositions}
@@ -104,6 +127,9 @@ export default function App() {
         exportProgress={exportProgress}
         selectedPlayerId={selectedPlayerId}
         setSelectedPlayerId={setSelectedPlayerId}
+        onAddPlayer={handleAddPlayer}
+        onRemovePlayer={handleRemovePlayer}
+        players={players}
       />
       <div className="flex-1 flex gap-3 min-h-0">
         <FieldCanvas

@@ -38,19 +38,24 @@ export default function FieldCanvas({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Draw everything
+  // Draw everything (HiDPI-aware)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
     const { width, height } = canvasSize;
+
+    // Scale canvas buffer for sharp rendering on HiDPI screens
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     ctx.clearRect(0, 0, width, height);
     drawField(ctx, width, height);
     drawRoutes(ctx, players, width, height);
 
     if (isAnimating) {
-      // Draw animated player positions
       const animated = getAnimatedPositions(players, animationProgress);
       const f = FIELD;
       const scaleX = width / (f.WIDTH + f.PADDING * 2);
@@ -65,11 +70,10 @@ export default function FieldCanvas({
         const py = p.animY ?? p.y;
         const color = PLAYER_COLORS[p.team];
 
-        // Trail effect
         if (p.animX !== undefined) {
           ctx.beginPath();
           ctx.arc(px, py, PLAYER_RADIUS + 6, 0, Math.PI * 2);
-          ctx.fillStyle = color.replace(')', ', 0.15)').replace('rgb', 'rgba');
+          ctx.fillStyle = color + '26';
           ctx.fill();
         }
 
@@ -120,7 +124,6 @@ export default function FieldCanvas({
         if (hitId && !selectedPlayerId) {
           setSelectedPlayerId(hitId);
         } else if (selectedPlayerId && !hitId) {
-          // Add waypoint
           setPlayers((prev) =>
             prev.map((p) =>
               p.id === selectedPlayerId
@@ -160,8 +163,7 @@ export default function FieldCanvas({
     >
       <canvas
         ref={canvasRef}
-        width={canvasSize.width}
-        height={canvasSize.height}
+        style={{ width: canvasSize.width, height: canvasSize.height }}
         className="cursor-crosshair rounded-lg shadow-2xl"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
