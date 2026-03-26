@@ -1,10 +1,10 @@
 import { drawField } from './fieldRenderer';
-import { drawPlayers, drawRoutes } from './playerRenderer';
-import { getAnimatedPositions, getPlayDuration } from './animation';
-import { PLAYER_COLORS, PLAYER_RADIUS, FIELD } from './constants';
+import { drawPlayers, drawRoutes, drawBall, drawBallRoute } from './playerRenderer';
+import { getAnimatedPositions, getAnimatedBallPosition, getPlayDuration } from './animation';
+import { PLAYER_COLORS, PLAYER_RADIUS, FIELD, BALL_RADIUS, BALL_COLOR, BALL_OUTLINE } from './constants';
 import { ANIMATION_FPS } from './constants';
 
-export function recordPlay(players, onComplete, onProgress) {
+export function recordPlay(players, ball, onComplete, onProgress, speedMultiplier = 1) {
   const width = 880;
   const height = 600;
   const canvas = document.createElement('canvas');
@@ -12,13 +12,12 @@ export function recordPlay(players, onComplete, onProgress) {
   canvas.height = height;
   const ctx = canvas.getContext('2d');
 
-  const totalFrames = getPlayDuration(players);
+  const totalFrames = getPlayDuration(players, ball, speedMultiplier);
   if (totalFrames === 0) {
     onComplete(null);
     return;
   }
 
-  // Add padding frames: 30 at start (still), animation, 30 at end (still)
   const padFrames = 30;
   const allFrames = padFrames + totalFrames + padFrames;
 
@@ -52,10 +51,10 @@ export function recordPlay(players, onComplete, onProgress) {
       progress = (frame - padFrames) / totalFrames;
     }
 
-    // Draw field
     ctx.clearRect(0, 0, width, height);
     drawField(ctx, width, height);
     drawRoutes(ctx, players, width, height);
+    drawBallRoute(ctx, ball, width, height);
 
     // Draw animated players
     const animated = getAnimatedPositions(players, progress);
@@ -81,19 +80,39 @@ export function recordPlay(players, onComplete, onProgress) {
       ctx.stroke();
 
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 13px system-ui';
+      ctx.font = "bold 13px 'Barlow', system-ui";
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(p.label, px, py);
     }
 
+    // Draw animated ball
+    if (ball) {
+      const ab = getAnimatedBallPosition(ball, progress);
+      const bx = ab.animX ?? ab.x;
+      const by = ab.animY ?? ab.y;
+
+      ctx.beginPath();
+      ctx.arc(bx, by, BALL_RADIUS + 3, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(232, 160, 32, 0.2)';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(bx, by, BALL_RADIUS, 0, Math.PI * 2);
+      ctx.fillStyle = BALL_COLOR;
+      ctx.fill();
+      ctx.strokeStyle = BALL_OUTLINE;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
     ctx.restore();
 
-    // Play name watermark
+    // Watermark
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.font = 'bold 16px system-ui';
+    ctx.font = "bold 16px 'Barlow Condensed', system-ui";
     ctx.textAlign = 'left';
-    ctx.fillText('Touch Play Designer', 10, height - 10);
+    ctx.fillText('CPH Touch Play Designer', 10, height - 10);
 
     if (onProgress) onProgress(frame / allFrames);
 

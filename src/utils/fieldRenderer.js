@@ -44,9 +44,9 @@ export function drawField(ctx, width, height) {
 
   // 10m lines (dashed)
   ctx.setLineDash([8, 6]);
-  const tenM = f.WIDTH / 7; // approximate 10m marks
+  const tenM = f.WIDTH / 7;
   for (let i = 1; i <= 6; i++) {
-    if (i === 3 || i === 4) continue; // skip near halfway
+    if (i === 3 || i === 4) continue;
     ctx.beginPath();
     ctx.moveTo(i * tenM, 0);
     ctx.lineTo(i * tenM, f.HEIGHT);
@@ -62,7 +62,7 @@ export function drawField(ctx, width, height) {
 
   // "TRY ZONE" labels
   ctx.fillStyle = 'rgba(255,255,255,0.3)';
-  ctx.font = 'bold 14px system-ui';
+  ctx.font = "bold 14px 'Barlow Condensed', system-ui";
   ctx.textAlign = 'center';
   ctx.save();
   ctx.translate(-f.TRY_ZONE_DEPTH / 2, f.HEIGHT / 2);

@@ -33,15 +33,50 @@ export function getAnimatedPositions(players, progress) {
   });
 }
 
-// Get total duration of play in frames based on longest route
-export function getPlayDuration(players) {
+// Animate the ball (same logic as a single player)
+export function getAnimatedBallPosition(ball, progress) {
+  if (!ball || !ball.route || ball.route.length === 0) {
+    return ball ? { ...ball } : null;
+  }
+
+  const fullPath = [{ x: ball.x, y: ball.y }, ...ball.route];
+  const totalDist = getTotalDistance(fullPath);
+
+  if (totalDist === 0) return { ...ball };
+
+  const targetDist = progress * totalDist;
+  let traveled = 0;
+
+  for (let i = 1; i < fullPath.length; i++) {
+    const segDist = dist(fullPath[i - 1], fullPath[i]);
+    if (traveled + segDist >= targetDist) {
+      const t = (targetDist - traveled) / segDist;
+      return {
+        ...ball,
+        animX: lerp(fullPath[i - 1].x, fullPath[i].x, t),
+        animY: lerp(fullPath[i - 1].y, fullPath[i].y, t),
+      };
+    }
+    traveled += segDist;
+  }
+
+  const last = fullPath[fullPath.length - 1];
+  return { ...ball, animX: last.x, animY: last.y };
+}
+
+// Get total duration of play in frames based on longest route (including ball)
+export function getPlayDuration(players, ball, speedMultiplier = 1) {
   let maxDist = 0;
   for (const player of players) {
     if (!player.route || player.route.length === 0) continue;
     const fullPath = [{ x: player.x, y: player.y }, ...player.route];
     maxDist = Math.max(maxDist, getTotalDistance(fullPath));
   }
-  return Math.ceil(maxDist / ANIMATION_SPEED);
+  if (ball && ball.route && ball.route.length > 0) {
+    const ballPath = [{ x: ball.x, y: ball.y }, ...ball.route];
+    maxDist = Math.max(maxDist, getTotalDistance(ballPath));
+  }
+  return Math.ceil(maxDist / (ANIMATION_SPEED * speedMultiplier));
 }
 
 function getTotalDistance(path) {

@@ -1,15 +1,17 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import { drawField } from '../utils/fieldRenderer';
-import { drawPlayers, drawRoutes, hitTestPlayer } from '../utils/playerRenderer';
+import { drawPlayers, drawRoutes, drawBall, drawBallRoute, hitTestPlayer, hitTestBall } from '../utils/playerRenderer';
 import { canvasToField } from '../utils/fieldRenderer';
-import { getAnimatedPositions } from '../utils/animation';
-import { PLAYER_COLORS, PLAYER_RADIUS, FIELD } from '../utils/constants';
+import { getAnimatedPositions, getAnimatedBallPosition } from '../utils/animation';
+import { PLAYER_COLORS, PLAYER_RADIUS, FIELD, BALL_RADIUS, BALL_COLOR, BALL_OUTLINE } from '../utils/constants';
 
 export default function FieldCanvas({
   players,
   setPlayers,
-  selectedPlayerId,
-  setSelectedPlayerId,
+  ball,
+  setBall,
+  selectedId,
+  setSelectedId,
   mode,
   animationProgress,
   isAnimating,
@@ -17,7 +19,7 @@ export default function FieldCanvas({
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [canvasSize, setCanvasSize] = useState({ width: 880, height: 600 });
-  const draggingRef = useRef(null);
+  const draggingRef = useRef(null); // 'ball' or player id
 
   // Resize canvas to fill container
   useEffect(() => {
@@ -46,7 +48,6 @@ export default function FieldCanvas({
     const dpr = window.devicePixelRatio || 1;
     const { width, height } = canvasSize;
 
-    // Scale canvas buffer for sharp rendering on HiDPI screens
     canvas.width = width * dpr;
     canvas.height = height * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -54,9 +55,11 @@ export default function FieldCanvas({
     ctx.clearRect(0, 0, width, height);
     drawField(ctx, width, height);
     drawRoutes(ctx, players, width, height);
+    drawBallRoute(ctx, ball, width, height);
 
     if (isAnimating) {
       const animated = getAnimatedPositions(players, animationProgress);
+      const animBall = getAnimatedBallPosition(ball, animationProgress);
       const f = FIELD;
       const scaleX = width / (f.WIDTH + f.PADDING * 2);
       const scaleY = height / (f.HEIGHT + f.PADDING * 2);
@@ -86,16 +89,37 @@ export default function FieldCanvas({
         ctx.stroke();
 
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 13px system-ui';
+        ctx.font = "bold 13px 'Barlow', system-ui";
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(p.label, px, py);
       }
+
+      // Animated ball
+      if (animBall) {
+        const bx = animBall.animX ?? animBall.x;
+        const by = animBall.animY ?? animBall.y;
+
+        ctx.beginPath();
+        ctx.arc(bx, by, BALL_RADIUS + 3, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(232, 160, 32, 0.25)';
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(bx, by, BALL_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = BALL_COLOR;
+        ctx.fill();
+        ctx.strokeStyle = BALL_OUTLINE;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
       ctx.restore();
     } else {
-      drawPlayers(ctx, players, selectedPlayerId, width, height);
+      drawPlayers(ctx, players, selectedId, width, height);
+      drawBall(ctx, ball, selectedId === 'ball', width, height);
     }
-  }, [players, selectedPlayerId, canvasSize, animationProgress, isAnimating]);
+  }, [players, ball, selectedId, canvasSize, animationProgress, isAnimating]);
 
   const getFieldCoords = useCallback(
     (e) => {
@@ -111,45 +135,66 @@ export default function FieldCanvas({
     (e) => {
       if (isAnimating) return;
       const { x, y } = getFieldCoords(e);
-      const hitId = hitTestPlayer(players, x, y);
+
+      // Check ball hit first (smaller target, should take priority when overlapping)
+      const ballHit = hitTestBall(ball, x, y);
+      const playerHit = hitTestPlayer(players, x, y);
 
       if (mode === 'move') {
-        if (hitId) {
-          setSelectedPlayerId(hitId);
-          draggingRef.current = hitId;
+        if (ballHit) {
+          setSelectedId('ball');
+          draggingRef.current = 'ball';
+        } else if (playerHit) {
+          setSelectedId(playerHit);
+          draggingRef.current = playerHit;
         } else {
-          setSelectedPlayerId(null);
+          setSelectedId(null);
         }
       } else if (mode === 'route') {
-        if (hitId && !selectedPlayerId) {
-          setSelectedPlayerId(hitId);
-        } else if (selectedPlayerId && !hitId) {
-          setPlayers((prev) =>
-            prev.map((p) =>
-              p.id === selectedPlayerId
-                ? { ...p, route: [...(p.route || []), { x, y }] }
-                : p
-            )
-          );
-        } else if (hitId) {
-          setSelectedPlayerId(hitId);
+        if (ballHit && selectedId !== 'ball') {
+          setSelectedId('ball');
+        } else if (playerHit && !selectedId) {
+          setSelectedId(playerHit);
+        } else if (playerHit && selectedId !== playerHit) {
+          setSelectedId(playerHit);
+        } else if (selectedId && !playerHit && !ballHit) {
+          // Add waypoint
+          if (selectedId === 'ball') {
+            setBall((prev) => ({ ...prev, route: [...(prev.route || []), { x, y }] }));
+          } else {
+            setPlayers((prev) =>
+              prev.map((p) =>
+                p.id === selectedId
+                  ? { ...p, route: [...(p.route || []), { x, y }] }
+                  : p
+              )
+            );
+          }
+        } else if (ballHit) {
+          setSelectedId('ball');
+        } else if (playerHit) {
+          setSelectedId(playerHit);
         }
       }
     },
-    [mode, players, selectedPlayerId, isAnimating, getFieldCoords, setPlayers, setSelectedPlayerId]
+    [mode, players, ball, selectedId, isAnimating, getFieldCoords, setPlayers, setBall, setSelectedId]
   );
 
   const handleMouseMove = useCallback(
     (e) => {
       if (!draggingRef.current || isAnimating) return;
       const { x, y } = getFieldCoords(e);
-      setPlayers((prev) =>
-        prev.map((p) =>
-          p.id === draggingRef.current ? { ...p, x, y } : p
-        )
-      );
+      if (draggingRef.current === 'ball') {
+        setBall((prev) => ({ ...prev, x, y }));
+      } else {
+        setPlayers((prev) =>
+          prev.map((p) =>
+            p.id === draggingRef.current ? { ...p, x, y } : p
+          )
+        );
+      }
     },
-    [isAnimating, getFieldCoords, setPlayers]
+    [isAnimating, getFieldCoords, setPlayers, setBall]
   );
 
   const handleMouseUp = useCallback(() => {
@@ -159,12 +204,13 @@ export default function FieldCanvas({
   return (
     <div
       ref={containerRef}
-      className="flex-1 flex items-center justify-center bg-gray-900 rounded-xl overflow-hidden min-h-0"
+      className="flex-1 flex items-center justify-center rounded-xl overflow-hidden min-h-0"
+      style={{ background: 'var(--cph-deep)' }}
     >
       <canvas
         ref={canvasRef}
         style={{ width: canvasSize.width, height: canvasSize.height }}
-        className="cursor-crosshair rounded-lg shadow-2xl"
+        className="cursor-crosshair rounded-lg"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

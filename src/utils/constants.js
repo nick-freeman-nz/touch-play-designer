@@ -17,6 +17,12 @@ export const PLAYER_COLORS = {
   defense: '#3b82f6', // blue
 };
 
+// Ball
+export const BALL_RADIUS = 10;
+export const BALL_COLOR = '#e8a020'; // gold
+export const BALL_OUTLINE = '#f5c052';
+export const DEFAULT_BALL = { x: 360, y: 260, route: [] };
+
 export const DEFAULT_ATTACK_POSITIONS = [
   { id: 'a1', label: '1', team: 'attack', x: 420, y: 100 },
   { id: 'a2', label: '2', team: 'attack', x: 420, y: 180 },
