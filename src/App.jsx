@@ -18,7 +18,7 @@ let nextId = 100;
 export default function App() {
   const [players, setPlayers] = useState(defaultPlayers);
   const [ball, setBall] = useState(defaultBall);
-  const [selectedId, setSelectedId] = useState(null); // player id or 'ball'
+  const [selectedId, setSelectedId] = useState(null);
   const [mode, setMode] = useState('move');
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationProgress, setAnimationProgress] = useState(0);
@@ -28,12 +28,11 @@ export default function App() {
   const [speed, setSpeed] = useState(1);
   const animFrameRef = useRef(null);
 
-  // Track whether undo is possible (selected entity has route waypoints)
   const canUndo = (() => {
     if (!selectedId) return false;
-    if (selectedId === 'ball') return ball && ball.route && ball.route.length > 0;
+    if (selectedId === 'ball') return ball?.route?.length > 0;
     const p = players.find((p) => p.id === selectedId);
-    return p && p.route && p.route.length > 0;
+    return p?.route?.length > 0;
   })();
 
   const handlePlay = useCallback(() => {
@@ -102,16 +101,11 @@ export default function App() {
   const handleUndo = useCallback(() => {
     if (!selectedId) return;
     if (selectedId === 'ball') {
-      setBall((prev) => ({
-        ...prev,
-        route: prev.route.slice(0, -1),
-      }));
+      setBall((prev) => ({ ...prev, route: prev.route.slice(0, -1) }));
     } else {
       setPlayers((prev) =>
         prev.map((p) =>
-          p.id === selectedId
-            ? { ...p, route: p.route.slice(0, -1) }
-            : p
+          p.id === selectedId ? { ...p, route: p.route.slice(0, -1) } : p
         )
       );
     }
@@ -154,35 +148,24 @@ export default function App() {
     );
   }, [players, ball, speed]);
 
-  // Keyboard shortcuts
   useEffect(() => {
     function handleKeyDown(e) {
-      // Ctrl+Z = undo
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault();
         handleUndo();
         return;
       }
-      // Space = play/stop
       if (e.key === ' ' && e.target === document.body) {
         e.preventDefault();
-        if (isAnimating) {
-          handleStop();
-        } else {
-          handlePlay();
-        }
+        isAnimating ? handleStop() : handlePlay();
         return;
       }
-      // Escape = deselect
       if (e.key === 'Escape') {
         setSelectedId(null);
         return;
       }
-      // Delete/Backspace = remove selected player
       if ((e.key === 'Delete' || e.key === 'Backspace') && e.target === document.body) {
-        if (selectedId && selectedId !== 'ball') {
-          handleRemovePlayer();
-        }
+        if (selectedId && selectedId !== 'ball') handleRemovePlayer();
       }
     }
     window.addEventListener('keydown', handleKeyDown);
@@ -190,34 +173,28 @@ export default function App() {
   }, [handleUndo, handlePlay, handleStop, handleRemovePlayer, isAnimating, selectedId]);
 
   return (
-    <div className="h-screen flex flex-col text-white p-4 gap-3" style={{ background: 'var(--cph-deep)' }}>
+    <div className="h-screen flex flex-col p-3 gap-2.5" style={{ background: 'var(--bg)' }}>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center text-lg"
-            style={{ background: 'var(--cph-bright)', color: 'var(--cph-deep)' }}
-          >
-            🏉
-          </div>
-          <div>
-            <h1
-              className="text-lg font-bold tracking-tight leading-tight"
-              style={{ fontFamily: "'Barlow Condensed', sans-serif", color: 'var(--cph-mint)' }}
-            >
-              CPH TOUCH
-              <span className="font-normal ml-1.5" style={{ color: 'var(--cph-light)' }}>
-                Play Designer
-              </span>
-            </h1>
-            <p className="text-xs" style={{ color: 'var(--cph-mid)', marginTop: '-1px' }}>
-              Copenhagen Touch Rugby
-            </p>
-          </div>
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2.5">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <ellipse cx="12" cy="12" rx="10" ry="7" fill="var(--accent)" transform="rotate(-30 12 12)" opacity="0.9"/>
+            <path d="M6 16Q12 12 18 8" stroke="white" strokeWidth="1" opacity="0.5"/>
+          </svg>
+          <span style={{
+            fontFamily: "'Barlow Condensed', sans-serif",
+            fontSize: 16,
+            fontWeight: 700,
+            letterSpacing: '0.02em',
+            color: 'var(--text)',
+          }}>
+            CPH Touch
+            <span style={{ fontWeight: 400, color: 'var(--text-secondary)', marginLeft: 6 }}>
+              Play Designer
+            </span>
+          </span>
         </div>
-        <span className="text-xs px-2 py-0.5 rounded-full" style={{ color: 'var(--cph-mid)', background: 'var(--cph-forest)' }}>
-          v2.0
-        </span>
+        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>v2.1</span>
       </div>
 
       <Toolbar
@@ -242,7 +219,8 @@ export default function App() {
         players={players}
         canUndo={canUndo}
       />
-      <div className="flex-1 flex gap-3 min-h-0">
+
+      <div className="flex-1 flex gap-2.5 min-h-0">
         <FieldCanvas
           players={players}
           setPlayers={setPlayers}

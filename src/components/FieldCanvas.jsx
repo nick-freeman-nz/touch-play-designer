@@ -19,9 +19,8 @@ export default function FieldCanvas({
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [canvasSize, setCanvasSize] = useState({ width: 880, height: 600 });
-  const draggingRef = useRef(null); // 'ball' or player id
+  const draggingRef = useRef(null);
 
-  // Resize canvas to fill container
   useEffect(() => {
     function handleResize() {
       if (!containerRef.current) return;
@@ -40,7 +39,6 @@ export default function FieldCanvas({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Draw everything (HiDPI-aware)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -95,7 +93,6 @@ export default function FieldCanvas({
         ctx.fillText(p.label, px, py);
       }
 
-      // Animated ball
       if (animBall) {
         const bx = animBall.animX ?? animBall.x;
         const by = animBall.animY ?? animBall.y;
@@ -135,8 +132,6 @@ export default function FieldCanvas({
     (e) => {
       if (isAnimating) return;
       const { x, y } = getFieldCoords(e);
-
-      // Check ball hit first (smaller target, should take priority when overlapping)
       const ballHit = hitTestBall(ball, x, y);
       const playerHit = hitTestPlayer(players, x, y);
 
@@ -158,7 +153,6 @@ export default function FieldCanvas({
         } else if (playerHit && selectedId !== playerHit) {
           setSelectedId(playerHit);
         } else if (selectedId && !playerHit && !ballHit) {
-          // Add waypoint
           if (selectedId === 'ball') {
             setBall((prev) => ({ ...prev, route: [...(prev.route || []), { x, y }] }));
           } else {
@@ -202,15 +196,11 @@ export default function FieldCanvas({
   }, []);
 
   return (
-    <div
-      ref={containerRef}
-      className="flex-1 flex items-center justify-center rounded-xl overflow-hidden min-h-0"
-      style={{ background: 'var(--cph-deep)' }}
-    >
+    <div ref={containerRef} className="canvas-wrap">
       <canvas
         ref={canvasRef}
         style={{ width: canvasSize.width, height: canvasSize.height }}
-        className="cursor-crosshair rounded-lg"
+        className="cursor-crosshair"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
