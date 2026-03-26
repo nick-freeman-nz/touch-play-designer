@@ -1,5 +1,5 @@
 import { drawField } from './fieldRenderer';
-import { drawPlayers, drawRoutes, drawBall, drawBallRoute } from './playerRenderer';
+import { drawPlayers, drawRoutes, drawBall, drawBallRoute, drawRugbyBallShape } from './playerRenderer';
 import { getAnimatedPositions, getAnimatedBallPosition, getPlayDuration } from './animation';
 import { PLAYER_COLORS, PLAYER_RADIUS, FIELD, BALL_RADIUS, BALL_COLOR, BALL_OUTLINE } from './constants';
 import { ANIMATION_FPS } from './constants';
@@ -91,19 +91,7 @@ export function recordPlay(players, ball, onComplete, onProgress, speedMultiplie
       const ab = getAnimatedBallPosition(ball, progress);
       const bx = ab.animX ?? ab.x;
       const by = ab.animY ?? ab.y;
-
-      ctx.beginPath();
-      ctx.arc(bx, by, BALL_RADIUS + 3, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(232, 160, 32, 0.2)';
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.arc(bx, by, BALL_RADIUS, 0, Math.PI * 2);
-      ctx.fillStyle = BALL_COLOR;
-      ctx.fill();
-      ctx.strokeStyle = BALL_OUTLINE;
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
+      drawRugbyBallShape(ctx, bx, by);
     }
 
     ctx.restore();

@@ -25,14 +25,8 @@ export default function FieldCanvas({
     function handleResize() {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
-      const aspect = 880 / 600;
-      let w = rect.width;
-      let h = w / aspect;
-      if (h > rect.height) {
-        h = rect.height;
-        w = h * aspect;
-      }
-      setCanvasSize({ width: Math.floor(w), height: Math.floor(h) });
+      // Fill the entire container — no letterboxing
+      setCanvasSize({ width: Math.floor(rect.width), height: Math.floor(rect.height) });
     }
     handleResize();
     window.addEventListener('resize', handleResize);

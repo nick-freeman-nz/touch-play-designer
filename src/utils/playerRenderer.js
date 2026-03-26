@@ -42,6 +42,55 @@ export function drawPlayers(ctx, players, selectedId, canvasWidth, canvasHeight)
   ctx.restore();
 }
 
+// Shared rugby ball shape drawing
+function drawRugbyBallShape(ctx, bx, by, scale = 1) {
+  const rx = 14 * scale;
+  const ry = 9 * scale;
+  const angle = -Math.PI / 5; // tilted ~36°
+
+  // Glow
+  ctx.save();
+  ctx.translate(bx, by);
+  ctx.rotate(angle);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, rx + 3, ry + 3, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(232, 160, 32, 0.18)';
+  ctx.fill();
+
+  // Ball body
+  ctx.beginPath();
+  ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fillStyle = BALL_COLOR;
+  ctx.fill();
+  ctx.strokeStyle = BALL_OUTLINE;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Center seam
+  ctx.beginPath();
+  ctx.moveTo(-rx * 0.75, 0);
+  ctx.lineTo(rx * 0.75, 0);
+  ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+
+  // Cross stitches
+  const stitchCount = 4;
+  const stitchSpan = rx * 0.9;
+  const stitchH = ry * 0.28;
+  for (let i = 0; i < stitchCount; i++) {
+    const sx = -stitchSpan / 2 + (stitchSpan / (stitchCount - 1)) * i;
+    ctx.beginPath();
+    ctx.moveTo(sx, -stitchH);
+    ctx.lineTo(sx, stitchH);
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 0.7;
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
 export function drawBall(ctx, ball, isSelected, canvasWidth, canvasHeight) {
   if (!ball) return;
   const f = FIELD;
@@ -55,39 +104,22 @@ export function drawBall(ctx, ball, isSelected, canvasWidth, canvasHeight) {
   const bx = ball.animX ?? ball.x;
   const by = ball.animY ?? ball.y;
 
-  // Selection ring
+  // Selection ring (elliptical)
   if (isSelected) {
+    ctx.save();
+    ctx.translate(bx, by);
+    ctx.rotate(-Math.PI / 5);
     ctx.beginPath();
-    ctx.arc(bx, by, BALL_RADIUS + 4, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, 18, 13, 0, 0, Math.PI * 2);
     ctx.strokeStyle = '#e8a020';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2.5;
     ctx.setLineDash([4, 3]);
     ctx.stroke();
     ctx.setLineDash([]);
+    ctx.restore();
   }
 
-  // Glow
-  ctx.beginPath();
-  ctx.arc(bx, by, BALL_RADIUS + 3, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(232, 160, 32, 0.2)';
-  ctx.fill();
-
-  // Ball circle
-  ctx.beginPath();
-  ctx.arc(bx, by, BALL_RADIUS, 0, Math.PI * 2);
-  ctx.fillStyle = BALL_COLOR;
-  ctx.fill();
-  ctx.strokeStyle = BALL_OUTLINE;
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  // Seam lines
-  ctx.beginPath();
-  ctx.moveTo(bx - 4, by - 3);
-  ctx.lineTo(bx + 4, by + 3);
-  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
+  drawRugbyBallShape(ctx, bx, by);
 
   ctx.restore();
 }
@@ -212,5 +244,9 @@ export function hitTestBall(ball, fieldX, fieldY) {
   if (!ball) return false;
   const dx = ball.x - fieldX;
   const dy = ball.y - fieldY;
-  return dx * dx + dy * dy <= (BALL_RADIUS + 4) * (BALL_RADIUS + 4);
+  // Generous circular hit area covering the ellipse
+  return dx * dx + dy * dy <= 18 * 18;
 }
+
+// Re-export for use in FieldCanvas and videoExport animated rendering
+export { drawRugbyBallShape };

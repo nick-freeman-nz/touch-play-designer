@@ -131,8 +131,7 @@ export default function App() {
     setIsExporting(true);
     setExportProgress(0);
     recordPlay(
-      players,
-      ball,
+      players, ball,
       (blob) => {
         setIsExporting(false);
         if (!blob) return;
@@ -150,20 +149,9 @@ export default function App() {
 
   useEffect(() => {
     function handleKeyDown(e) {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault();
-        handleUndo();
-        return;
-      }
-      if (e.key === ' ' && e.target === document.body) {
-        e.preventDefault();
-        isAnimating ? handleStop() : handlePlay();
-        return;
-      }
-      if (e.key === 'Escape') {
-        setSelectedId(null);
-        return;
-      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); handleUndo(); return; }
+      if (e.key === ' ' && e.target === document.body) { e.preventDefault(); isAnimating ? handleStop() : handlePlay(); return; }
+      if (e.key === 'Escape') { setSelectedId(null); return; }
       if ((e.key === 'Delete' || e.key === 'Backspace') && e.target === document.body) {
         if (selectedId && selectedId !== 'ball') handleRemovePlayer();
       }
@@ -173,72 +161,52 @@ export default function App() {
   }, [handleUndo, handlePlay, handleStop, handleRemovePlayer, isAnimating, selectedId]);
 
   return (
-    <div className="h-screen flex flex-col p-3 gap-2.5" style={{ background: 'var(--bg)' }}>
+    <div className="h-screen flex flex-col p-2.5 gap-2" style={{ background: 'var(--bg)' }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2.5">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <div className="flex items-center justify-between px-2 py-1">
+        <div className="flex items-center gap-3">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
             <ellipse cx="12" cy="12" rx="10" ry="7" fill="var(--accent)" transform="rotate(-30 12 12)" opacity="0.9"/>
             <path d="M6 16Q12 12 18 8" stroke="white" strokeWidth="1" opacity="0.5"/>
           </svg>
           <span style={{
             fontFamily: "'Barlow Condensed', sans-serif",
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: 700,
             letterSpacing: '0.02em',
             color: 'var(--text)',
           }}>
             CPH Touch
-            <span style={{ fontWeight: 400, color: 'var(--text-secondary)', marginLeft: 6 }}>
+            <span style={{ fontWeight: 400, color: 'var(--text-secondary)', marginLeft: 8 }}>
               Play Designer
             </span>
           </span>
         </div>
-        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>v2.1</span>
       </div>
 
       <Toolbar
-        mode={mode}
-        setMode={setMode}
-        onPlay={handlePlay}
-        onStop={handleStop}
-        isAnimating={isAnimating}
-        onClearRoutes={handleClearRoutes}
-        onResetPositions={handleResetPositions}
-        onExportVideo={handleExportVideo}
-        isExporting={isExporting}
-        exportProgress={exportProgress}
-        selectedId={selectedId}
-        setSelectedId={setSelectedId}
-        onAddPlayer={handleAddPlayer}
-        onRemovePlayer={handleRemovePlayer}
-        onUndo={handleUndo}
-        onMirror={handleMirror}
-        speed={speed}
-        setSpeed={setSpeed}
-        players={players}
-        canUndo={canUndo}
+        mode={mode} setMode={setMode}
+        onPlay={handlePlay} onStop={handleStop} isAnimating={isAnimating}
+        onClearRoutes={handleClearRoutes} onResetPositions={handleResetPositions}
+        onExportVideo={handleExportVideo} isExporting={isExporting} exportProgress={exportProgress}
+        selectedId={selectedId} setSelectedId={setSelectedId}
+        onAddPlayer={handleAddPlayer} onRemovePlayer={handleRemovePlayer}
+        onUndo={handleUndo} onMirror={handleMirror}
+        speed={speed} setSpeed={setSpeed}
+        players={players} canUndo={canUndo}
       />
 
       <div className="flex-1 flex gap-2.5 min-h-0">
         <FieldCanvas
-          players={players}
-          setPlayers={setPlayers}
-          ball={ball}
-          setBall={setBall}
-          selectedId={selectedId}
-          setSelectedId={setSelectedId}
-          mode={mode}
-          animationProgress={animationProgress}
-          isAnimating={isAnimating}
+          players={players} setPlayers={setPlayers}
+          ball={ball} setBall={setBall}
+          selectedId={selectedId} setSelectedId={setSelectedId}
+          mode={mode} animationProgress={animationProgress} isAnimating={isAnimating}
         />
         <PlayList
-          players={players}
-          setPlayers={setPlayers}
-          ball={ball}
-          setBall={setBall}
-          currentPlayId={currentPlayId}
-          setCurrentPlayId={setCurrentPlayId}
+          players={players} setPlayers={setPlayers}
+          ball={ball} setBall={setBall}
+          currentPlayId={currentPlayId} setCurrentPlayId={setCurrentPlayId}
         />
       </div>
     </div>
